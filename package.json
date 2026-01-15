@@ -1,0 +1,17 @@
+{
+  "name": "new-year-game",
+  "version": "1.0.0",
+  "description": "守卫年夜饭 - A New Year multiplayer game combining Bomberman, Maze, and Tower Defense",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["game", "multiplayer", "new-year", "tower-defense"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1"
+  }
+}
