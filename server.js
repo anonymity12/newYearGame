@@ -7,6 +7,36 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
+// Simple rate limiting middleware
+const requestCounts = new Map();
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const MAX_REQUESTS = 100; // max requests per window
+
+app.use((req, res, next) => {
+  const clientIp = req.ip || req.connection.remoteAddress;
+  const now = Date.now();
+  
+  if (!requestCounts.has(clientIp)) {
+    requestCounts.set(clientIp, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return next();
+  }
+  
+  const clientData = requestCounts.get(clientIp);
+  
+  if (now > clientData.resetTime) {
+    clientData.count = 1;
+    clientData.resetTime = now + RATE_LIMIT_WINDOW;
+    return next();
+  }
+  
+  if (clientData.count >= MAX_REQUESTS) {
+    return res.status(429).send('Too many requests');
+  }
+  
+  clientData.count++;
+  next();
+});
+
 app.use(express.static('public'));
 
 app.get('/', (req, res) => {
