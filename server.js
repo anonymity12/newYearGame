@@ -25,6 +25,10 @@ class GameRoom {
     this.enemies = [];
     this.waveNumber = 0;
     this.gameStarted = false;
+    this.gameLoop = null;
+    this.coreX = 18;
+    this.coreY = 13;
+    this.coreHP = 100;
   }
 
   generateMaze() {
@@ -121,11 +125,129 @@ class GameRoom {
         x, y, type: towerType,
         damage: towerType === 'lantern' ? 10 : 20,
         range: towerType === 'lantern' ? 2 : 4,
-        attackSpeed: towerType === 'lantern' ? 1000 : 1500
+        attackSpeed: towerType === 'lantern' ? 1000 : 1500,
+        lastAttack: 0
       });
       return true;
     }
     return false;
+  }
+
+  findPath(startX, startY, endX, endY) {
+    // Simple BFS pathfinding
+    const queue = [[startX, startY, []]];
+    const visited = new Set();
+    visited.add(`${startX},${startY}`);
+    
+    while (queue.length > 0) {
+      const [x, y, path] = queue.shift();
+      
+      if (x === endX && y === endY) {
+        return path;
+      }
+      
+      const directions = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+      for (const [dx, dy] of directions) {
+        const nx = x + dx;
+        const ny = y + dy;
+        const key = `${nx},${ny}`;
+        
+        if (!visited.has(key) && 
+            ny >= 0 && ny < this.maze.length && 
+            nx >= 0 && nx < this.maze[0].length) {
+          const cell = this.maze[ny][nx];
+          if (cell.type === 'empty' || cell.type === 'core') {
+            visited.add(key);
+            queue.push([nx, ny, [...path, { x: nx, y: ny }]]);
+          }
+        }
+      }
+    }
+    
+    return [];
+  }
+
+  updateEnemies() {
+    for (let i = this.enemies.length - 1; i >= 0; i--) {
+      const enemy = this.enemies[i];
+      
+      if (enemy.hp <= 0) {
+        this.enemies.splice(i, 1);
+        this.sharedResources.coins += 5; // Reward for killing enemy
+        continue;
+      }
+      
+      // Update path if needed
+      if (!enemy.path || enemy.path.length === 0) {
+        enemy.path = this.findPath(enemy.x, enemy.y, this.coreX, this.coreY);
+      }
+      
+      // Move along path
+      if (enemy.path && enemy.path.length > 0) {
+        const nextPos = enemy.path[0];
+        enemy.x = nextPos.x;
+        enemy.y = nextPos.y;
+        enemy.path.shift();
+        
+        // Check if reached core
+        if (enemy.x === this.coreX && enemy.y === this.coreY) {
+          this.coreHP -= 10;
+          this.enemies.splice(i, 1);
+        }
+      }
+    }
+  }
+
+  updateTowers() {
+    const now = Date.now();
+    
+    this.towers.forEach(tower => {
+      if (now - tower.lastAttack < tower.attackSpeed) {
+        return;
+      }
+      
+      // Find enemies in range
+      for (const enemy of this.enemies) {
+        const dist = Math.sqrt(
+          Math.pow(enemy.x - tower.x, 2) + 
+          Math.pow(enemy.y - tower.y, 2)
+        );
+        
+        if (dist <= tower.range) {
+          enemy.hp -= tower.damage;
+          tower.lastAttack = now;
+          break; // One target per attack
+        }
+      }
+    });
+  }
+
+  startGameLoop(io) {
+    if (this.gameLoop) {
+      return;
+    }
+    
+    this.gameLoop = setInterval(() => {
+      if (this.enemies.length > 0) {
+        this.updateEnemies();
+        this.updateTowers();
+        io.to(this.roomId).emit('gameState', this.getState());
+        
+        if (this.coreHP <= 0) {
+          io.to(this.roomId).emit('gameOver', { victory: false });
+          this.stopGameLoop();
+        } else if (this.enemies.length === 0) {
+          io.to(this.roomId).emit('waveComplete', { waveNumber: this.waveNumber });
+        }
+      }
+    }, 500);
+  }
+
+  stopGameLoop() {
+    if (this.gameLoop) {
+      clearInterval(this.gameLoop);
+      this.gameLoop = null;
+    }
   }
 
   getState() {
@@ -135,7 +257,8 @@ class GameRoom {
       sharedResources: this.sharedResources,
       towers: this.towers,
       enemies: this.enemies,
-      waveNumber: this.waveNumber
+      waveNumber: this.waveNumber,
+      coreHP: this.coreHP
     };
   }
 }
@@ -228,6 +351,8 @@ io.on('connection', (socket) => {
       });
     }
     
+    room.startGameLoop(io);
+    
     io.to(socket.roomId).emit('gameState', room.getState());
     io.to(socket.roomId).emit('waveStarted', { waveNumber: room.waveNumber });
   });
@@ -241,6 +366,7 @@ io.on('connection', (socket) => {
         room.removePlayer(socket.id);
         
         if (room.players.size === 0) {
+          room.stopGameLoop();
           rooms.delete(socket.roomId);
         } else {
           io.to(socket.roomId).emit('gameState', room.getState());

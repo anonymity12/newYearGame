@@ -166,6 +166,41 @@ body {
     color: #333;
 }
 
+.core-status {
+    margin-top: 15px;
+    text-align: center;
+    background: #fff9e6;
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid #ff6b6b;
+}
+
+.core-status h3 {
+    color: #ff6b6b;
+    margin-bottom: 10px;
+}
+
+.hp-bar {
+    width: 100%;
+    height: 20px;
+    background: #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.hp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff6b6b, #ff8e53);
+    transition: width 0.3s ease;
+}
+
+.hp-text {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #333;
+}
+
 .wave-info {
     margin-top: 15px;
     text-align: center;

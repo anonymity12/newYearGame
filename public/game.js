@@ -24,6 +24,8 @@ const sharedCoinsSpan = document.getElementById('shared-coins');
 const waveNumberSpan = document.getElementById('wave-number');
 const startWaveBtn = document.getElementById('start-wave-btn');
 const towerBtns = document.querySelectorAll('.tower-btn');
+const coreHpSpan = document.getElementById('core-hp');
+const coreHpFill = document.getElementById('core-hp-fill');
 
 canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
@@ -138,6 +140,18 @@ socket.on('waveStarted', (data) => {
   console.log('Wave started:', data.waveNumber);
 });
 
+socket.on('waveComplete', (data) => {
+  alert(`第 ${data.waveNumber} 波完成！准备下一波！`);
+});
+
+socket.on('gameOver', (data) => {
+  if (data.victory) {
+    alert('胜利！你们成功守卫了年夜饭！');
+  } else {
+    alert('失败！年夜饭被小年兽吃掉了！');
+  }
+});
+
 function updateUI() {
   if (!gameState) return;
   
@@ -151,6 +165,11 @@ function updateUI() {
   
   // Update wave number
   waveNumberSpan.textContent = gameState.waveNumber;
+  
+  // Update core HP
+  coreHpSpan.textContent = gameState.coreHP || 100;
+  const hpPercent = (gameState.coreHP || 100) / 100;
+  coreHpFill.style.width = `${hpPercent * 100}%`;
 }
 
 function render() {
