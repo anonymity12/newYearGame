@@ -177,9 +177,10 @@ class GameRoom {
         continue;
       }
       
-      // Update path if needed
-      if (!enemy.path || enemy.path.length === 0) {
+      // Update path if needed or not cached
+      if (!enemy.path || enemy.path.length === 0 || !enemy.pathCached) {
         enemy.path = this.findPath(enemy.x, enemy.y, this.coreX, this.coreY);
+        enemy.pathCached = true;
       }
       
       // Move along path
@@ -196,6 +197,12 @@ class GameRoom {
         }
       }
     }
+  }
+
+  invalidateEnemyPaths() {
+    this.enemies.forEach(enemy => {
+      enemy.pathCached = false;
+    });
   }
 
   updateTowers() {
@@ -228,17 +235,20 @@ class GameRoom {
     }
     
     this.gameLoop = setInterval(() => {
-      if (this.enemies.length > 0) {
+      const hadEnemies = this.enemies.length > 0;
+      
+      if (hadEnemies) {
         this.updateEnemies();
         this.updateTowers();
-        io.to(this.roomId).emit('gameState', this.getState());
-        
-        if (this.coreHP <= 0) {
-          io.to(this.roomId).emit('gameOver', { victory: false });
-          this.stopGameLoop();
-        } else if (this.enemies.length === 0) {
-          io.to(this.roomId).emit('waveComplete', { waveNumber: this.waveNumber });
-        }
+      }
+      
+      io.to(this.roomId).emit('gameState', this.getState());
+      
+      if (this.coreHP <= 0) {
+        io.to(this.roomId).emit('gameOver', { victory: false });
+        this.stopGameLoop();
+      } else if (hadEnemies && this.enemies.length === 0) {
+        io.to(this.roomId).emit('waveComplete', { waveNumber: this.waveNumber });
       }
     }, 500);
   }
@@ -311,11 +321,15 @@ io.on('connection', (socket) => {
     
     setTimeout(() => {
       const destroyedCells = room.explodeBomb(x, y, socket.id);
+      room.invalidateEnemyPaths(); // Recalculate paths after maze changes
       io.to(socket.roomId).emit('explosion', { x, y, destroyedCells });
       io.to(socket.roomId).emit('gameState', room.getState());
       
       setTimeout(() => {
-        player.bombs = Math.min(player.bombs + 1, 3);
+        const currentPlayer = room.players.get(socket.id);
+        if (currentPlayer) {
+          currentPlayer.bombs = Math.min(currentPlayer.bombs + 1, 3);
+        }
       }, 3000);
     }, 2000);
   });
@@ -341,11 +355,14 @@ io.on('connection', (socket) => {
     room.waveNumber++;
     const enemyCount = 5 + room.waveNumber * 2;
     
+    // Spawn enemies at different positions along the top edge
     for (let i = 0; i < enemyCount; i++) {
+      const spawnX = 1 + (i % (room.maze[0].length - 2));
+      const spawnY = 1;
       room.enemies.push({
         id: `enemy_${Date.now()}_${i}`,
-        x: 1,
-        y: 1,
+        x: spawnX,
+        y: spawnY,
         hp: 50 + room.waveNumber * 10,
         path: []
       });

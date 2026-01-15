@@ -42,7 +42,6 @@ joinBtn.addEventListener('click', () => {
   
   playerName = name || `Player${Math.floor(Math.random() * 1000)}`;
   currentRoom = room;
-  myPlayerId = socket.id;
   
   socket.emit('joinRoom', { roomId: room, playerName: playerName });
   
