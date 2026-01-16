@@ -2,6 +2,34 @@
 
 一款融合**炸弹人**、**迷宫**和**塔防**元素的新年主题合家欢小游戏！
 
+🎮 A multiplayer tower defense game combining Bomberman, Maze, and TD mechanics with Chinese New Year theme.
+
+## 📁 Project Structure (v2.0 - Separated Frontend/Backend)
+
+This is a monorepo with separated frontend and backend:
+
+```
+newYearGame/
+├── client/                 # Frontend (Vite + PhaserJS + TypeScript)
+│   ├── src/
+│   │   ├── scenes/        # Phaser game scenes
+│   │   ├── entities/      # Game entities (Player, Enemy, Tower)
+│   │   ├── managers/      # Network and resource managers
+│   │   ├── config/        # Game configuration
+│   │   ├── types/         # TypeScript definitions
+│   │   └── assets/        # Game assets (sprites, audio)
+│   └── index.html
+├── server/                 # Backend (Express + Socket.IO)
+│   └── src/
+│       ├── game/          # Game logic (GameRoom, RoomManager)
+│       ├── socket/        # Socket event handlers
+│       └── middleware/    # Express middleware
+├── scripts/               # Utility scripts
+│   └── generate-assets.js # Gemini AI asset generator
+├── public/                # [Legacy] Original frontend
+└── package.json           # Monorepo configuration
+```
+
 ## 🎮 游戏特色
 
 - **动态迷宫生成** - 炸开爆竹堆、年货箱和雪堆来清理道路
@@ -16,16 +44,52 @@
 ### 安装依赖
 
 ```bash
+# Install all dependencies (root + workspaces)
 npm install
 ```
 
-### 启动服务器
+### 开发模式
 
 ```bash
-npm start
+# Run both frontend and backend in development mode
+npm run dev
+
+# Or run separately:
+npm run dev:server  # Backend on http://localhost:3000
+npm run dev:client  # Frontend on http://localhost:5173
 ```
 
-服务器将在 `http://localhost:3000` 启动
+### 生产构建
+
+```bash
+# Build frontend
+npm run build
+
+# Start production server
+npm run start
+```
+
+## 🎨 使用 Gemini AI 生成游戏资源
+
+项目包含使用 Google Gemini Flash Image 模型生成中国新年主题游戏精灵图的脚本。
+
+```bash
+# 设置 API key 并运行
+GEMINI_API_KEY=your_api_key npm run generate-assets
+
+# 或作为参数传递
+node scripts/generate-assets.js --api-key=your_api_key
+```
+
+生成的资源包括:
+- 🏠 瓦片精灵 (墙壁、地板、核心)
+- 📦 障碍物精灵 (爆竹、礼盒、雪堆)
+- 🐯 玩家角色 (中国生肖动物: 虎、龙、兔、牛)
+- 🐲 敌人精灵 (年兽)
+- 🏮 防御塔精灵 (灯笼塔、二踢脚发射器)
+- 🧧 资源拾取物 (年糕、红包、锦鲤)
+- ✨ 效果精灵 (爆炸、光束)
+- 🎨 UI 元素 (面板、按钮)
 
 ### 游戏玩法
 

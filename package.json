@@ -1,17 +1,24 @@
 {
   "name": "new-year-game",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "守卫年夜饭 - A New Year multiplayer game combining Bomberman, Maze, and Tower Defense",
-  "main": "server.js",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:client": "npm run dev --workspace=client",
+    "build": "npm run build --workspace=client",
+    "start": "npm run start --workspace=server",
+    "generate-assets": "node scripts/generate-assets.js"
   },
-  "keywords": ["game", "multiplayer", "new-year", "tower-defense"],
+  "keywords": ["game", "multiplayer", "new-year", "tower-defense", "phaser"],
   "author": "",
   "license": "MIT",
-  "dependencies": {
-    "express": "^4.18.2",
-    "socket.io": "^4.6.1"
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
 }
