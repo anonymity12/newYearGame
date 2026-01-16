@@ -15,10 +15,18 @@
     "start": "npm run start --workspace=server",
     "generate-assets": "node scripts/generate-assets.js"
   },
-  "keywords": ["game", "multiplayer", "new-year", "tower-defense", "phaser"],
+  "keywords": [
+    "game",
+    "multiplayer",
+    "new-year",
+    "tower-defense",
+    "phaser"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "https-proxy-agent": "^7.0.6",
+    "node-fetch": "^3.3.2"
   }
 }

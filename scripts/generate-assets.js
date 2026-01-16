@@ -11,15 +11,20 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { config } from 'dotenv';
+import fetch from 'node-fetch';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Load .env file from project root
+config({ path: path.join(__dirname, '../.env') });
 
 // Configuration
 const CONFIG = {
   apiKey: process.env.GEMINI_API_KEY || getApiKeyFromArgs(),
   outputDir: path.join(__dirname, '../client/src/assets/sprites'),
-  model: 'gemini-2.0-flash-exp-image-generation',
+  model: 'imagen-3.0-generate-002',
   baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
 };
 
@@ -216,32 +221,31 @@ const ASSETS = {
 };
 
 /**
- * Generate an image using Gemini Flash Image model
+ * Generate an image using Imagen or Gemini Image model
  */
 async function generateImage(prompt, outputPath) {
   if (!CONFIG.apiKey) {
     throw new Error('GEMINI_API_KEY is required. Set it via environment variable or --api-key argument.');
   }
 
-  const url = `${CONFIG.baseUrl}/${CONFIG.model}:generateContent?key=${CONFIG.apiKey}`;
+  const url = `${CONFIG.baseUrl}/${CONFIG.model}:predict?key=${CONFIG.apiKey}`;
 
+  // Imagen API format
   const requestBody = {
-    contents: [
+    instances: [
       {
-        parts: [
-          {
-            text: prompt,
-          },
-        ],
+        prompt: prompt,
       },
     ],
-    generationConfig: {
-      responseModalities: ['TEXT', 'IMAGE'],
+    parameters: {
+      sampleCount: 1,
+      aspectRatio: "1:1",
     },
   };
 
   console.log(`🎨 Generating: ${path.basename(outputPath)}`);
   console.log(`   Prompt: ${prompt.substring(0, 100)}...`);
+  console.log(`   URL: ${url.replace(CONFIG.apiKey, 'API_KEY_HIDDEN')}`);
 
   try {
     const response = await fetch(url, {
@@ -252,29 +256,34 @@ async function generateImage(prompt, outputPath) {
       body: JSON.stringify(requestBody),
     });
 
+    const responseText = await response.text();
+    
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`API error: ${response.status} - ${error}`);
+      console.error(`   ❌ API error: ${response.status}`);
+      console.error(`   Response: ${responseText.substring(0, 500)}`);
+      throw new Error(`API error: ${response.status} - ${responseText}`);
     }
 
-    const data = await response.json();
-
-    // Extract image from response
-    const candidates = data.candidates;
-    if (!candidates || candidates.length === 0) {
-      throw new Error('No candidates in response');
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      throw new Error('Failed to parse response: ' + responseText.substring(0, 200));
     }
 
-    const parts = candidates[0].content.parts;
-    const imagePart = parts.find(part => part.inlineData);
+    // Extract image from Imagen response
+    const predictions = data.predictions;
+    if (!predictions || predictions.length === 0) {
+      throw new Error('No predictions in response: ' + JSON.stringify(data));
+    }
 
-    if (!imagePart) {
-      console.log('   ⚠️ No image generated, response:', JSON.stringify(parts.map(p => p.text || 'image'), null, 2));
+    const imageData = predictions[0].bytesBase64Encoded;
+    if (!imageData) {
+      console.log('   ⚠️ No image generated, response:', JSON.stringify(predictions[0], null, 2).substring(0, 200));
       return false;
     }
 
     // Save the image
-    const imageData = imagePart.inlineData.data;
     const buffer = Buffer.from(imageData, 'base64');
     
     // Ensure directory exists
@@ -288,6 +297,9 @@ async function generateImage(prompt, outputPath) {
     return true;
   } catch (error) {
     console.error(`   ❌ Error: ${error.message}`);
+    if (error.cause) {
+      console.error(`   Cause: ${error.cause}`);
+    }
     return false;
   }
 }
