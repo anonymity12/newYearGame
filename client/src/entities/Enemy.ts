@@ -11,7 +11,7 @@ export class Enemy extends Phaser.GameObjects.Container {
   public gridY: number;
   
   private enemyData: EnemyData;
-  private sprite: Phaser.GameObjects.Text;
+  private sprite: Phaser.GameObjects.Image | Phaser.GameObjects.Text;
   private hpBar: Phaser.GameObjects.Graphics;
   private maxHp: number;
 
@@ -26,11 +26,24 @@ export class Enemy extends Phaser.GameObjects.Container {
     this.gridY = data.y;
     this.maxHp = data.maxHp || data.hp;
     
-    // Enemy sprite (emoji for now)
-    this.sprite = scene.add.text(0, 0, '🐲', {
-      fontSize: '28px',
-    });
-    this.sprite.setOrigin(0.5);
+    // Determine if this is a boss enemy (based on hp or id)
+    const isBoss = this.maxHp >= 200 || (data.id && data.id.includes('boss'));
+    const spriteKey = isBoss ? 'enemy-nian-boss' : 'enemy-nian';
+    
+    // Create enemy sprite - use generated assets or fallback to emoji
+    if (scene.textures.exists(spriteKey)) {
+      const imgSprite = scene.add.image(0, 0, spriteKey);
+      const spriteSize = isBoss ? 48 : 36;
+      imgSprite.setDisplaySize(spriteSize, spriteSize);
+      this.sprite = imgSprite;
+    } else {
+      // Fallback to emoji
+      const emojiSprite = scene.add.text(0, 0, isBoss ? '👹' : '🐲', {
+        fontSize: isBoss ? '36px' : '28px',
+      });
+      emojiSprite.setOrigin(0.5);
+      this.sprite = emojiSprite;
+    }
     this.add(this.sprite);
     
     // HP bar
@@ -107,10 +120,12 @@ export class Enemy extends Phaser.GameObjects.Container {
     
     // Flash red when damaged
     if (hp < this.enemyData.hp) {
-      this.sprite.setTint(0xFF0000);
-      this.scene.time.delayedCall(100, () => {
-        this.sprite.clearTint();
-      });
+      if (this.sprite instanceof Phaser.GameObjects.Image) {
+        this.sprite.setTint(0xFF0000);
+        this.scene.time.delayedCall(100, () => {
+          (this.sprite as Phaser.GameObjects.Image).clearTint();
+        });
+      }
     }
     
     this.enemyData.hp = hp;

@@ -2,6 +2,20 @@ import Phaser from 'phaser';
 import { GAME_CONFIG, COLORS } from '../config/gameConfig';
 import { TowerData } from '../types/game';
 
+// Tower sprite key mapping
+const TOWER_SPRITES: Record<string, string> = {
+  lantern: 'tower-lantern',
+  firecracker: 'tower-firecracker',
+  drum: 'tower-drum',
+};
+
+// Tower emoji fallback mapping
+const TOWER_EMOJI: Record<string, string> = {
+  lantern: '🏮',
+  firecracker: '🧨',
+  drum: '🥁',
+};
+
 /**
  * Tower entity - represents a defensive tower
  * 塔实体 - 表示防御塔
@@ -11,7 +25,7 @@ export class Tower extends Phaser.GameObjects.Container {
   public gridY: number;
   
   private towerData: TowerData;
-  private sprite: Phaser.GameObjects.Text;
+  private sprite: Phaser.GameObjects.Image | Phaser.GameObjects.Text;
   private rangeIndicator: Phaser.GameObjects.Graphics;
   private baseGraphic: Phaser.GameObjects.Graphics;
 
@@ -36,12 +50,21 @@ export class Tower extends Phaser.GameObjects.Container {
     this.drawBase();
     this.add(this.baseGraphic);
     
-    // Tower sprite (emoji for now)
-    const emoji = data.type === 'lantern' ? '🏮' : '🧨';
-    this.sprite = scene.add.text(0, -5, emoji, {
-      fontSize: '28px',
-    });
-    this.sprite.setOrigin(0.5);
+    // Tower sprite - use generated assets or fallback to emoji
+    const spriteKey = TOWER_SPRITES[data.type] || TOWER_SPRITES.lantern;
+    if (scene.textures.exists(spriteKey)) {
+      const imgSprite = scene.add.image(0, -5, spriteKey);
+      imgSprite.setDisplaySize(40, 40);
+      this.sprite = imgSprite;
+    } else {
+      // Fallback to emoji
+      const emoji = TOWER_EMOJI[data.type] || TOWER_EMOJI.lantern;
+      const emojiSprite = scene.add.text(0, -5, emoji, {
+        fontSize: '28px',
+      });
+      emojiSprite.setOrigin(0.5);
+      this.sprite = emojiSprite;
+    }
     this.add(this.sprite);
     
     scene.add.existing(this);
@@ -55,13 +78,24 @@ export class Tower extends Phaser.GameObjects.Container {
       ease: 'Back.easeOut',
     });
     
-    // Idle animation
+    // Idle animation based on tower type
     if (data.type === 'lantern') {
       // Gentle glow for lantern
       scene.tweens.add({
         targets: this.sprite,
         alpha: 0.8,
         duration: 1000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    } else if (data.type === 'drum') {
+      // Pulse for drum
+      scene.tweens.add({
+        targets: this.sprite,
+        scaleX: 1.1,
+        scaleY: 1.1,
+        duration: 500,
         yoyo: true,
         repeat: -1,
         ease: 'Sine.easeInOut',

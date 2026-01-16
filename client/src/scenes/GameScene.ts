@@ -166,56 +166,114 @@ export class GameScene extends Phaser.Scene {
 
   private createTile(cell: MazeCell, x: number, y: number): Phaser.GameObjects.GameObject {
     const size = GAME_CONFIG.TILE_SIZE;
-    const graphics = this.add.graphics();
     
     switch (cell.type) {
       case 'wall':
-        graphics.fillStyle(COLORS.WALL, 1);
-        graphics.fillRect(x, y, size, size);
-        graphics.lineStyle(1, 0x5a3a1a, 1);
-        graphics.strokeRect(x, y, size, size);
-        break;
+        // Try to use generated sprite first
+        if (this.textures.exists('tile-wall')) {
+          const wallSprite = this.add.image(x + size / 2, y + size / 2, 'tile-wall');
+          wallSprite.setDisplaySize(size, size);
+          return wallSprite;
+        } else {
+          const graphics = this.add.graphics();
+          graphics.fillStyle(COLORS.WALL, 1);
+          graphics.fillRect(x, y, size, size);
+          graphics.lineStyle(1, 0x5a3a1a, 1);
+          graphics.strokeRect(x, y, size, size);
+          return graphics;
+        }
         
       case 'empty':
-        graphics.fillStyle(COLORS.EMPTY, 1);
-        graphics.fillRect(x, y, size, size);
-        graphics.lineStyle(1, 0xddd5c5, 0.5);
-        graphics.strokeRect(x, y, size, size);
-        break;
+        // Try to use generated floor sprite first
+        if (this.textures.exists('tile-floor')) {
+          const floorSprite = this.add.image(x + size / 2, y + size / 2, 'tile-floor');
+          floorSprite.setDisplaySize(size, size);
+          return floorSprite;
+        } else {
+          const graphics = this.add.graphics();
+          graphics.fillStyle(COLORS.EMPTY, 1);
+          graphics.fillRect(x, y, size, size);
+          graphics.lineStyle(1, 0xddd5c5, 0.5);
+          graphics.strokeRect(x, y, size, size);
+          return graphics;
+        }
         
       case 'core':
-        // Core tile with special styling
-        graphics.fillStyle(COLORS.GOLD, 1);
-        graphics.fillRect(x, y, size, size);
-        graphics.lineStyle(2, COLORS.PRIMARY_RED, 1);
-        graphics.strokeRect(x, y, size, size);
-        
-        // Add core emoji
-        const coreEmoji = this.add.text(x + size / 2, y + size / 2, '🍜', {
-          fontSize: '28px',
-        });
-        coreEmoji.setOrigin(0.5);
-        this.tileContainer.add(coreEmoji);
-        break;
+        // Core tile with special styling - use sprite or fallback
+        if (this.textures.exists('tile-core')) {
+          const coreSprite = this.add.image(x + size / 2, y + size / 2, 'tile-core');
+          coreSprite.setDisplaySize(size + 8, size + 8);
+          // Add pulsing animation for core
+          this.tweens.add({
+            targets: coreSprite,
+            scaleX: 1.1,
+            scaleY: 1.1,
+            duration: 800,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+          });
+          return coreSprite;
+        } else {
+          const graphics = this.add.graphics();
+          graphics.fillStyle(COLORS.GOLD, 1);
+          graphics.fillRect(x, y, size, size);
+          graphics.lineStyle(2, COLORS.PRIMARY_RED, 1);
+          graphics.strokeRect(x, y, size, size);
+          
+          // Add core emoji
+          const coreEmoji = this.add.text(x + size / 2, y + size / 2, '🍜', {
+            fontSize: '28px',
+          });
+          coreEmoji.setOrigin(0.5);
+          this.tileContainer.add(coreEmoji);
+          return graphics;
+        }
         
       case 'obstacle':
-        graphics.fillStyle(COLORS.EMPTY, 1);
-        graphics.fillRect(x, y, size, size);
+        // Create floor first
+        let floorGraphics: Phaser.GameObjects.Image | Phaser.GameObjects.Graphics;
+        if (this.textures.exists('tile-floor')) {
+          floorGraphics = this.add.image(x + size / 2, y + size / 2, 'tile-floor');
+          (floorGraphics as Phaser.GameObjects.Image).setDisplaySize(size, size);
+        } else {
+          floorGraphics = this.add.graphics();
+          (floorGraphics as Phaser.GameObjects.Graphics).fillStyle(COLORS.EMPTY, 1);
+          (floorGraphics as Phaser.GameObjects.Graphics).fillRect(x, y, size, size);
+        }
+        this.tileContainer.add(floorGraphics);
         
-        // Add obstacle emoji
-        let emoji = '📦';
-        if (cell.obstacleType === 'firecracker') emoji = '🧨';
-        else if (cell.obstacleType === 'snow') emoji = '❄️';
+        // Add obstacle sprite based on type
+        const obstacleType = cell.obstacleType || 'goods';
+        const obstacleKey = `obstacle-${obstacleType}`;
         
-        const obstacleEmoji = this.add.text(x + size / 2, y + size / 2, emoji, {
-          fontSize: '24px',
-        });
-        obstacleEmoji.setOrigin(0.5);
-        this.tileContainer.add(obstacleEmoji);
-        break;
+        if (this.textures.exists(obstacleKey)) {
+          const obstacleSprite = this.add.image(x + size / 2, y + size / 2, obstacleKey);
+          obstacleSprite.setDisplaySize(size - 4, size - 4);
+          this.tileContainer.add(obstacleSprite);
+        } else {
+          // Fallback to emoji
+          let emoji = '📦';
+          if (obstacleType === 'firecracker') emoji = '🧨';
+          else if (obstacleType === 'snow') emoji = '❄️';
+          
+          const obstacleEmoji = this.add.text(x + size / 2, y + size / 2, emoji, {
+            fontSize: '24px',
+          });
+          obstacleEmoji.setOrigin(0.5);
+          this.tileContainer.add(obstacleEmoji);
+        }
+        
+        // Return a container or placeholder
+        const placeholder = this.add.graphics();
+        return placeholder;
     }
     
-    return graphics;
+    // Default fallback
+    const defaultGraphics = this.add.graphics();
+    defaultGraphics.fillStyle(COLORS.EMPTY, 1);
+    defaultGraphics.fillRect(x, y, size, size);
+    return defaultGraphics;
   }
 
   private renderPlayers(players: Array<{ id: string; name: string; x: number; y: number; bombs: number }>): void {
@@ -289,17 +347,34 @@ export class GameScene extends Phaser.Scene {
     const x = GAME_CONFIG.MAP_OFFSET_X + gridX * GAME_CONFIG.TILE_SIZE + GAME_CONFIG.TILE_SIZE / 2;
     const y = GAME_CONFIG.MAP_OFFSET_Y + gridY * GAME_CONFIG.TILE_SIZE + GAME_CONFIG.TILE_SIZE / 2;
     
-    // Create explosion circle
-    const explosion = this.add.circle(x, y, 10, COLORS.PRIMARY_RED, 0.8);
-    
-    this.tweens.add({
-      targets: explosion,
-      radius: 50,
-      alpha: 0,
-      duration: 300,
-      ease: 'Power2',
-      onComplete: () => explosion.destroy(),
-    });
+    // Try to use generated explosion sprite
+    if (this.textures.exists('effect-explosion')) {
+      const explosionSprite = this.add.image(x, y, 'effect-explosion');
+      explosionSprite.setDisplaySize(64, 64);
+      explosionSprite.setAlpha(0.9);
+      
+      this.tweens.add({
+        targets: explosionSprite,
+        scaleX: 2,
+        scaleY: 2,
+        alpha: 0,
+        duration: 400,
+        ease: 'Power2',
+        onComplete: () => explosionSprite.destroy(),
+      });
+    } else {
+      // Fallback to circle animation
+      const explosion = this.add.circle(x, y, 10, COLORS.PRIMARY_RED, 0.8);
+      
+      this.tweens.add({
+        targets: explosion,
+        radius: 50,
+        alpha: 0,
+        duration: 300,
+        ease: 'Power2',
+        onComplete: () => explosion.destroy(),
+      });
+    }
     
     // Create particles
     for (let i = 0; i < 8; i++) {

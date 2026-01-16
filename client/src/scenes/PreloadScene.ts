@@ -113,9 +113,9 @@ export class PreloadScene extends Phaser.Scene {
     // These will be replaced by AI-generated assets later
     this.createPlaceholderSprites();
     
-    // Try to load real sprites (will fail gracefully if not present)
+    // Load real sprites
     this.load.image('tile-wall', `${spritePath}/tiles/wall.png`);
-    this.load.image('tile-empty', `${spritePath}/tiles/empty.png`);
+    this.load.image('tile-floor', `${spritePath}/tiles/floor.png`);
     this.load.image('tile-core', `${spritePath}/tiles/core.png`);
     
     // Obstacles
@@ -123,40 +123,31 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('obstacle-goods', `${spritePath}/obstacles/goods.png`);
     this.load.image('obstacle-snow', `${spritePath}/obstacles/snow.png`);
     
-    // Players (zodiac animals)
-    this.load.spritesheet('player-tiger', `${spritePath}/players/tiger.png`, {
-      frameWidth: 40,
-      frameHeight: 40,
-    });
-    this.load.spritesheet('player-dragon', `${spritePath}/players/dragon.png`, {
-      frameWidth: 40,
-      frameHeight: 40,
-    });
-    this.load.spritesheet('player-rabbit', `${spritePath}/players/rabbit.png`, {
-      frameWidth: 40,
-      frameHeight: 40,
-    });
+    // Players (zodiac animals) - single image sprites
+    this.load.image('player-tiger', `${spritePath}/players/tiger.png`);
+    this.load.image('player-dragon', `${spritePath}/players/dragon.png`);
+    this.load.image('player-rabbit', `${spritePath}/players/rabbit.png`);
+    this.load.image('player-ox', `${spritePath}/players/ox.png`);
     
-    // Enemies
-    this.load.spritesheet('enemy-nian', `${spritePath}/enemies/nian.png`, {
-      frameWidth: 40,
-      frameHeight: 40,
-    });
+    // Enemies - single image sprites
+    this.load.image('enemy-nian', `${spritePath}/enemies/nian.png`);
+    this.load.image('enemy-nian-boss', `${spritePath}/enemies/nian-boss.png`);
     
     // Towers
     this.load.image('tower-lantern', `${spritePath}/towers/lantern.png`);
-    this.load.image('tower-firecracker', `${spritePath}/towers/firecracker.png`);
+    this.load.image('tower-firecracker', `${spritePath}/towers/firecracker-launcher.png`);
+    this.load.image('tower-drum', `${spritePath}/towers/drum.png`);
     
     // Resources
     this.load.image('resource-niangao', `${spritePath}/resources/niangao.png`);
     this.load.image('resource-hongbao', `${spritePath}/resources/hongbao.png`);
     this.load.image('resource-koi', `${spritePath}/resources/koi.png`);
+    this.load.image('resource-coin', `${spritePath}/resources/coin.png`);
     
-    // Effects
-    this.load.spritesheet('explosion', `${spritePath}/effects/explosion.png`, {
-      frameWidth: 64,
-      frameHeight: 64,
-    });
+    // Effects - single image sprites
+    this.load.image('effect-explosion', `${spritePath}/effects/explosion.png`);
+    this.load.image('effect-lantern-beam', `${spritePath}/effects/lantern-beam.png`);
+    this.load.image('effect-coin-pickup', `${spritePath}/effects/coin-pickup.png`);
     
     // UI elements
     this.load.image('ui-panel', `${spritePath}/ui/panel.png`);
