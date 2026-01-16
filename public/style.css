@@ -1,0 +1,320 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Microsoft YaHei', Arial, sans-serif;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ffd93d 50%, #ff6b6b 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+#login-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.login-container {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    max-width: 500px;
+    width: 100%;
+    border: 4px solid #ff6b6b;
+}
+
+.login-container h1 {
+    color: #ff6b6b;
+    font-size: 2.5em;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.subtitle {
+    color: #666;
+    font-size: 1.2em;
+    margin-bottom: 30px;
+}
+
+.login-container input {
+    width: 100%;
+    padding: 15px;
+    margin: 10px 0;
+    border: 2px solid #ff6b6b;
+    border-radius: 10px;
+    font-size: 1.1em;
+    transition: border-color 0.3s;
+}
+
+.login-container input:focus {
+    outline: none;
+    border-color: #ffd93d;
+}
+
+.login-container button {
+    width: 100%;
+    padding: 15px;
+    margin: 20px 0 10px;
+    background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.3em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.login-container button:hover {
+    transform: scale(1.05);
+}
+
+.instructions {
+    margin-top: 30px;
+    text-align: left;
+    background: #fff9e6;
+    padding: 20px;
+    border-radius: 10px;
+    border: 2px dashed #ffd93d;
+}
+
+.instructions h3 {
+    color: #ff6b6b;
+    margin-bottom: 10px;
+}
+
+.instructions p {
+    margin: 8px 0;
+    color: #333;
+}
+
+#game-screen {
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.game-header {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+}
+
+.header-left, .header-center, .header-right {
+    flex: 1;
+    padding: 10px;
+}
+
+.header-left h2 {
+    color: #ff6b6b;
+    margin-bottom: 10px;
+}
+
+.players-list {
+    background: #fff9e6;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.players-list h3 {
+    color: #ff6b6b;
+    font-size: 1em;
+    margin-bottom: 5px;
+}
+
+#players-container {
+    font-size: 0.9em;
+}
+
+.resource-display {
+    text-align: center;
+}
+
+.shared-pool {
+    background: linear-gradient(135deg, #ffd93d, #ffed4e);
+    padding: 15px;
+    border-radius: 10px;
+    border: 3px solid #ff6b6b;
+}
+
+.shared-pool h3 {
+    color: #ff6b6b;
+    margin-bottom: 10px;
+}
+
+.resource-item {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #333;
+}
+
+.core-status {
+    margin-top: 15px;
+    text-align: center;
+    background: #fff9e6;
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid #ff6b6b;
+}
+
+.core-status h3 {
+    color: #ff6b6b;
+    margin-bottom: 10px;
+}
+
+.hp-bar {
+    width: 100%;
+    height: 20px;
+    background: #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.hp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff6b6b, #ff8e53);
+    transition: width 0.3s ease;
+}
+
+.hp-text {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #333;
+}
+
+.wave-info {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.wave-info span {
+    display: block;
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #ff6b6b;
+    margin-bottom: 10px;
+}
+
+#start-wave-btn {
+    padding: 10px 20px;
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+#start-wave-btn:hover {
+    background: #ff8e53;
+}
+
+.tower-controls {
+    text-align: center;
+}
+
+.tower-controls h3 {
+    color: #ff6b6b;
+    margin-bottom: 10px;
+}
+
+.tower-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    background: linear-gradient(135deg, #4ecdc4, #44a3a0);
+    color: white;
+    border: 2px solid #fff;
+    border-radius: 8px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.tower-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tower-btn.selected {
+    border-color: #ff6b6b;
+    box-shadow: 0 0 15px rgba(255, 107, 107, 0.5);
+}
+
+.game-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+#game-canvas {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    cursor: crosshair;
+}
+
+.controls-hint {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 10px;
+}
+
+.controls-hint p {
+    color: #333;
+    font-size: 1.1em;
+    margin: 5px 0;
+}
+
+.game-info {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+}
+
+.legend h3 {
+    color: #ff6b6b;
+    margin-bottom: 10px;
+}
+
+.legend-item {
+    display: inline-block;
+    margin: 5px 15px 5px 0;
+    font-size: 1em;
+    color: #333;
+}
+
+@media (max-width: 1200px) {
+    .game-header {
+        flex-direction: column;
+    }
+    
+    .header-left, .header-center, .header-right {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+}
