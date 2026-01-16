@@ -13,6 +13,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from 'dotenv';
 import fetch from 'node-fetch';
+import sharp from 'sharp';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,13 +26,21 @@ config({ path: path.join(__dirname, '../.env') });
 const CONFIG = {
   apiKey: process.env.GEMINI_API_KEY || getApiKeyFromArgs(),
   outputDir: path.join(__dirname, '../client/src/assets/sprites'),
-  model: 'imagen-3.0-generate-002',
+  model: 'gemini-2.0-flash-exp-image-generation',
   baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
 };
 
 function getApiKeyFromArgs() {
   const arg = process.argv.find(a => a.startsWith('--api-key='));
   return arg ? arg.split('=')[1] : null;
+}
+
+// Proxy configuration
+const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.https_proxy || process.env.http_proxy;
+const proxyAgent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : null;
+
+if (proxyAgent) {
+  console.log(`🌐 Using proxy: ${proxyUrl}`);
 }
 
 // Art style guide for consistent generation
@@ -42,7 +52,8 @@ Features:
 - Cute, round, chibi-style characters
 - Soft shadows and warm lighting
 - Clean outlines, suitable for game sprites
-- Transparent background (PNG format)
+- IMPORTANT: Pure solid black background (#000000), no gradients, no shadows on background
+- The subject must be clearly separated from the black background
 - Resolution: 128x128 pixels for tiles, 64x64 for characters
 - Similar style to mobile games like "Zodiac TD" or "Chinese New Year themed tower defense"
 `;
@@ -221,26 +232,78 @@ const ASSETS = {
 };
 
 /**
- * Generate an image using Imagen or Gemini Image model
+ * Remove black background from an image and make it transparent
+ * @param {Buffer} inputBuffer - The input image buffer
+ * @returns {Promise<Buffer>} - The processed image buffer with transparent background
+ */
+async function removeBlackBackground(inputBuffer) {
+  try {
+    // Read the image and get raw pixel data
+    const image = sharp(inputBuffer);
+    const { data, info } = await image
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    
+    const { width, height, channels } = info;
+    
+    // Process each pixel - if it's close to black, make it transparent
+    const threshold = 30; // Tolerance for "black" (0-255)
+    
+    for (let i = 0; i < data.length; i += channels) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      
+      // Check if pixel is close to black
+      if (r < threshold && g < threshold && b < threshold) {
+        // Make transparent
+        data[i + 3] = 0; // Set alpha to 0
+      }
+    }
+    
+    // Create new image with transparent background
+    const outputBuffer = await sharp(data, {
+      raw: {
+        width,
+        height,
+        channels,
+      },
+    })
+      .png()
+      .toBuffer();
+    
+    return outputBuffer;
+  } catch (error) {
+    console.error('   ⚠️ Failed to remove background:', error.message);
+    return inputBuffer; // Return original if processing fails
+  }
+}
+
+/**
+ * Generate an image using Gemini 2.0 Flash Image Generation model
  */
 async function generateImage(prompt, outputPath) {
   if (!CONFIG.apiKey) {
     throw new Error('GEMINI_API_KEY is required. Set it via environment variable or --api-key argument.');
   }
 
-  const url = `${CONFIG.baseUrl}/${CONFIG.model}:predict?key=${CONFIG.apiKey}`;
+  const url = `${CONFIG.baseUrl}/${CONFIG.model}:generateContent?key=${CONFIG.apiKey}`;
 
-  // Imagen API format
+  // Gemini Image Generation API format
   const requestBody = {
-    instances: [
+    contents: [
       {
-        prompt: prompt,
-      },
+        parts: [
+          {
+            text: `Generate an image: ${prompt}`
+          }
+        ]
+      }
     ],
-    parameters: {
-      sampleCount: 1,
-      aspectRatio: "1:1",
-    },
+    generationConfig: {
+      responseModalities: ["TEXT", "IMAGE"]
+    }
   };
 
   console.log(`🎨 Generating: ${path.basename(outputPath)}`);
@@ -248,13 +311,20 @@ async function generateImage(prompt, outputPath) {
   console.log(`   URL: ${url.replace(CONFIG.apiKey, 'API_KEY_HIDDEN')}`);
 
   try {
-    const response = await fetch(url, {
+    const fetchOptions = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody),
-    });
+    };
+    
+    // Add proxy agent if available
+    if (proxyAgent) {
+      fetchOptions.agent = proxyAgent;
+    }
+
+    const response = await fetch(url, fetchOptions);
 
     const responseText = await response.text();
     
@@ -271,20 +341,38 @@ async function generateImage(prompt, outputPath) {
       throw new Error('Failed to parse response: ' + responseText.substring(0, 200));
     }
 
-    // Extract image from Imagen response
-    const predictions = data.predictions;
-    if (!predictions || predictions.length === 0) {
-      throw new Error('No predictions in response: ' + JSON.stringify(data));
+    // Extract image from Gemini response
+    const candidates = data.candidates;
+    if (!candidates || candidates.length === 0) {
+      throw new Error('No candidates in response: ' + JSON.stringify(data).substring(0, 500));
     }
 
-    const imageData = predictions[0].bytesBase64Encoded;
-    if (!imageData) {
-      console.log('   ⚠️ No image generated, response:', JSON.stringify(predictions[0], null, 2).substring(0, 200));
+    const parts = candidates[0].content?.parts;
+    if (!parts) {
+      throw new Error('No parts in response: ' + JSON.stringify(candidates[0]).substring(0, 500));
+    }
+
+    // Find the image part
+    const imagePart = parts.find(part => part.inlineData);
+    if (!imagePart) {
+      console.log('   ⚠️ No image in response, got text only');
+      const textPart = parts.find(part => part.text);
+      if (textPart) {
+        console.log(`   Text response: ${textPart.text.substring(0, 200)}`);
+      }
       return false;
     }
 
-    // Save the image
-    const buffer = Buffer.from(imageData, 'base64');
+    const imageData = imagePart.inlineData.data;
+    if (!imageData) {
+      console.log('   ⚠️ No image data in response');
+      return false;
+    }
+
+    // Process the image to remove black background
+    const rawBuffer = Buffer.from(imageData, 'base64');
+    console.log(`   🔧 Removing black background...`);
+    const transparentBuffer = await removeBlackBackground(rawBuffer);
     
     // Ensure directory exists
     const dir = path.dirname(outputPath);
@@ -292,8 +380,8 @@ async function generateImage(prompt, outputPath) {
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    fs.writeFileSync(outputPath, buffer);
-    console.log(`   ✅ Saved: ${outputPath}`);
+    fs.writeFileSync(outputPath, transparentBuffer);
+    console.log(`   ✅ Saved with transparent background: ${outputPath}`);
     return true;
   } catch (error) {
     console.error(`   ❌ Error: ${error.message}`);

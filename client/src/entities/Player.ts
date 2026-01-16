@@ -78,12 +78,12 @@ export class Player extends Phaser.GameObjects.Container {
     
     scene.add.existing(this);
     
-    // Add idle animation
+    // Add glowing effect for current player instead of scaling
     if (isCurrentPlayer) {
+      // Pulsing glow animation on the highlight circle
       scene.tweens.add({
-        targets: this.sprite,
-        scaleX: 1.08,
-        scaleY: 0.92,
+        targets: this.highlightCircle,
+        alpha: 0.8,
         duration: 600,
         yoyo: true,
         repeat: -1,
@@ -105,12 +105,18 @@ export class Player extends Phaser.GameObjects.Container {
 
   private drawHighlight(): void {
     this.highlightCircle.clear();
-    this.highlightCircle.lineStyle(3, COLORS.GOLD, 0.8);
-    this.highlightCircle.strokeCircle(0, 0, 22);
     
-    // Add a subtle glow effect
-    this.highlightCircle.lineStyle(6, COLORS.GOLD, 0.2);
-    this.highlightCircle.strokeCircle(0, 0, 25);
+    // Outer glow ring
+    this.highlightCircle.lineStyle(8, COLORS.GOLD, 0.15);
+    this.highlightCircle.strokeCircle(0, 0, 28);
+    
+    // Middle glow ring
+    this.highlightCircle.lineStyle(5, COLORS.GOLD, 0.3);
+    this.highlightCircle.strokeCircle(0, 0, 24);
+    
+    // Inner bright ring
+    this.highlightCircle.lineStyle(3, COLORS.GOLD, 0.9);
+    this.highlightCircle.strokeCircle(0, 0, 20);
   }
 
   private drawPlayerFallback(graphics: Phaser.GameObjects.Graphics): void {

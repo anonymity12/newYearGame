@@ -57,9 +57,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createBackground(): void {
-    // Dark background with pattern
+    // Red background - festive Chinese New Year color
     const graphics = this.add.graphics();
-    graphics.fillStyle(0x1a0a0a, 1);
+    graphics.fillStyle(COLORS.PRIMARY_RED, 1);
     graphics.fillRect(0, 0, GAME_CONFIG.SCREEN_WIDTH, GAME_CONFIG.SCREEN_HEIGHT);
 
     // Decorative border around play area
@@ -71,8 +71,8 @@ export class GameScene extends Phaser.Scene {
     graphics.lineStyle(4, COLORS.GOLD, 1);
     graphics.strokeRoundedRect(borderX, borderY, borderW, borderH, 10);
     
-    // Inner glow
-    graphics.lineStyle(2, COLORS.PRIMARY_RED, 0.5);
+    // Inner glow with darker red
+    graphics.lineStyle(2, 0x8B0000, 0.8);
     graphics.strokeRoundedRect(borderX + 4, borderY + 4, borderW - 8, borderH - 8, 8);
   }
 
@@ -190,10 +190,11 @@ export class GameScene extends Phaser.Scene {
           floorSprite.setDisplaySize(size, size);
           return floorSprite;
         } else {
+          // Fallback to red floor matching the festive theme
           const graphics = this.add.graphics();
-          graphics.fillStyle(COLORS.EMPTY, 1);
+          graphics.fillStyle(COLORS.PRIMARY_RED, 1);
           graphics.fillRect(x, y, size, size);
-          graphics.lineStyle(1, 0xddd5c5, 0.5);
+          graphics.lineStyle(1, 0x8B0000, 0.5);
           graphics.strokeRect(x, y, size, size);
           return graphics;
         }
@@ -206,8 +207,8 @@ export class GameScene extends Phaser.Scene {
           // Add pulsing animation for core
           this.tweens.add({
             targets: coreSprite,
-            scaleX: 1.1,
-            scaleY: 1.1,
+            scaleX: 0.1,
+            scaleY: 0.1,
             duration: 800,
             yoyo: true,
             repeat: -1,
@@ -231,14 +232,14 @@ export class GameScene extends Phaser.Scene {
         }
         
       case 'obstacle':
-        // Create floor first
+        // Create floor first with red background
         let floorGraphics: Phaser.GameObjects.Image | Phaser.GameObjects.Graphics;
         if (this.textures.exists('tile-floor')) {
           floorGraphics = this.add.image(x + size / 2, y + size / 2, 'tile-floor');
           (floorGraphics as Phaser.GameObjects.Image).setDisplaySize(size, size);
         } else {
           floorGraphics = this.add.graphics();
-          (floorGraphics as Phaser.GameObjects.Graphics).fillStyle(COLORS.EMPTY, 1);
+          (floorGraphics as Phaser.GameObjects.Graphics).fillStyle(COLORS.PRIMARY_RED, 1);
           (floorGraphics as Phaser.GameObjects.Graphics).fillRect(x, y, size, size);
         }
         this.tileContainer.add(floorGraphics);
